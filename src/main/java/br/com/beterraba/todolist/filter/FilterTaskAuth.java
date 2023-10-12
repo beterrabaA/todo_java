@@ -21,26 +21,38 @@ public class FilterTaskAuth extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        var authorization = request.getHeader("Authorization");
+        var servletPath = request.getServletPath();
 
-        var authEncoded = authorization.substring("Basic".length()).trim();
-        byte[] authDecoded = Base64.getDecoder().decode(authEncoded);
-        var authString = new String(authDecoded);
+        if (servletPath.equals("/tasks/")) {
 
-        String[] credentials = authString.split(":");
 
-        var user = this.userRepository.findByUsername(credentials[0]);
-        if (user == null) {
-            response.sendError(401);
-        } else {
-            var isValidPassword = BCrypt.verifyer().verify(credentials[1].toCharArray(),user.getPassword());
-            if (isValidPassword.verified) {
-                filterChain.doFilter(request,response);
-            } else {
+            var authorization = request.getHeader("Authorization");
+
+            var authEncoded = authorization.substring("Basic".length()).trim();
+            byte[] authDecoded = Base64.getDecoder().decode(authEncoded);
+            var authString = new String(authDecoded);
+
+            String[] credentials = authString.split(":");
+            String username = credentials[0];
+            String password = credentials[1];
+
+            var user = this.userRepository.findByUsername(username);
+            if (user == null) {
                 response.sendError(401);
+                System.out.println("Invalid username");
+            } else {
+                var isValidPassword = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
+                if (isValidPassword.verified) {
+                    request.setAttribute("userId",user.getId());
+                    filterChain.doFilter(request, response);
+                } else {
+                    response.sendError(401);
+                    System.out.println("Invalid password");
+                }
+
             }
-
+        } else {
+            filterChain.doFilter(request, response);
         }
-
     }
 }
