@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -37,5 +38,10 @@ public class TaskController {
         }
 
         return ResponseEntity.accepted().body(this.taskRepository.save(taskModel));
+    }
+
+    @PutMapping("/{id}")
+    public Optional<TaskModel> update(@RequestBody TaskModel taskModel, HttpServletRequest request, @PathVariable UUID id) {
+        return this.taskRepository.findByIdAndSave(id, taskModel);
     }
 }
