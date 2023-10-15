@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -42,15 +41,23 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity update(@RequestBody TaskModel taskModel, HttpServletRequest request, @PathVariable UUID id) {
+    public ResponseEntity update(@RequestBody TaskModel taskModel, @PathVariable UUID id,HttpServletRequest request) {
         var task = this.taskRepository.findById(id).orElse(null);
 
         if (task == null) {
             return ResponseEntity.status(404).body("not found");
         }
 
+        var userId = request.getAttribute("userId");
+
+        if (!task.getUserId().equals(userId)) {
+            return ResponseEntity.status(403).body("unauthorized");
+        }
+
         Utils.copyNonNullProperties(taskModel,task);
 
-        return  ResponseEntity.ok().body("Task updated");
+        var taskUpdated = this.taskRepository.save(task);
+
+        return  ResponseEntity.ok().body(taskUpdated);
     }
 }
